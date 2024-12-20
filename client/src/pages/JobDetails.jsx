@@ -134,6 +134,7 @@ const JobDetails = () => {
             </div>
             <div className='rounded-full object-cover overflow-hidden w-14 h-14'>
               <img
+              referrerPolicy='no-referrer'
                 src={buyer?.photo}
                 alt=''
               />
