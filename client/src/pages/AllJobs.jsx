@@ -73,6 +73,7 @@ const AllJobs = () => {
             <select
               name='sort'
               id='sort'
+              value={sort}
               onChange={(e)=>setSort(e.target.value)}
 
               className='border p-4 rounded-md'
