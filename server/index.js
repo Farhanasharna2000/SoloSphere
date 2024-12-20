@@ -119,31 +119,40 @@ async function run() {
       res.send(result)
     })
 
-  
-      // update bid status
-      app.patch('/bid-status-update/:id', async (req, res) => {
-        const id = req.params.id
-        const { status } = req.body
-  
-        const filter = { _id: new ObjectId(id) }
-        const updated = {
-          $set: { status },
-        }
-        const result = await bidsCollection.updateOne(filter, updated)
-        res.send(result)
-      })
 
-      //get all jobs 
+    // update bid status
+    app.patch('/bid-status-update/:id', async (req, res) => {
+      const id = req.params.id
+      const { status } = req.body
 
-      app.get('/all-jobs',async(req,res)=>{
-        const filter=req.query.filter;
-        let query={}
-        if(filter){
-          query.category=filter;
+      const filter = { _id: new ObjectId(id) }
+      const updated = {
+        $set: { status },
+      }
+      const result = await bidsCollection.updateOne(filter, updated)
+      res.send(result)
+    })
+
+    //get all jobs 
+
+    app.get('/all-jobs', async (req, res) => {
+
+      const filter = req.query.filter;
+      const search = req.query.search;
+      const sort = req.query.sort;
+      let options = {}
+      let query = {
+        title: {
+          $regex: search,
+          $options: 'i'
         }
-        const result = await jobsCollection.find(query).toArray()
-        res.send(result)
-      })
+      }
+      if (filter) {
+        query.category = filter;
+      }
+      const result = await jobsCollection.find(query,options).toArray()
+      res.send(result)
+    })
 
     // Send a ping to confirm a successful connection
     // await client.db('admin').command({ ping: 1 })
