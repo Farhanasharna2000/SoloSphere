@@ -141,6 +141,9 @@ async function run() {
       const search = req.query.search;
       const sort = req.query.sort;
       let options = {}
+      if(sort){
+        options={sort:{deadline:sort==='asc'?1:-1}}
+      }
       let query = {
         title: {
           $regex: search,
