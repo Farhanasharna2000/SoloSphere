@@ -13,7 +13,7 @@ const BidRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
   const fetchAllbids = async () => {
-    const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/my-bids/${user?.email}?buyer=true`)
+    const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/my-bids/${user?.email}?buyer=true`,{withCredentials:true})
     setBids(data)
   }
   console.log(bids);
