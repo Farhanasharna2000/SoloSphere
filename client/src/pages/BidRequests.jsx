@@ -1,10 +1,11 @@
 import { useContext, useEffect, useState } from "react"
 import { AuthContext } from "../providers/AuthProvider"
-import axios from "axios"
 import BidRequestTableRow from "../components/BidRequestTableRow"
 import toast from 'react-hot-toast'
-const BidRequests = () => {
+import UseAxiosSecure from "../Hook/UseAxiosSecure"
 
+const BidRequests = () => {
+const axiosSecure=UseAxiosSecure()
   const { user } = useContext(AuthContext)
 
   const [bids, setBids] = useState([])
@@ -13,19 +14,20 @@ const BidRequests = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
   const fetchAllbids = async () => {
-    const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/my-bids/${user?.email}?buyer=true`,{withCredentials:true})
+    const { data } = await axiosSecure.get(`/my-bids/${user?.email}?buyer=true`)
     setBids(data)
   }
   console.log(bids);
 
   const handleStatusChange = async (id, prevStatus, status) => {
-    console.table({ id, prevStatus, status })
+    // console.table({ id, prevStatus, status })
+    
     // if(prevStatus===status||prevStatus==='Completed'){
     //   return console.log('Not allowed');
       
     // }
 try{
-const{data}=await axios.patch(`${import.meta.env.VITE_API_URL}/bid-status-update/${id}`,{status})
+const{data}=await axiosSecure.patch(`/bid-status-update/${id}`,{status})
 console.log(data);
 toast.success(`status changed to ${status}`)
 //refresh ui

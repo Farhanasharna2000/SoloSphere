@@ -54,7 +54,7 @@ async function run() {
       const email = req.body;
       //create token
       const token = jwt.sign(email, process.env.SECRET_KEY, { expiresIn: '365d' })
-      console.log(token);
+      // console.log(token);
       res
         .cookie('token', token, {
           httpOnly: true,
@@ -75,32 +75,11 @@ async function run() {
         })
         .send({ success: true })
     })
-    //save a job data in db
-    app.post('/add-job', async (req, res) => {
-      const jobData = req.body;
-      const result = await jobsCollection.insertOne(jobData)
-      res.send(result)
-    })
     //get all jobs data from db
     app.get('/jobs', async (req, res) => {
       const result = await jobsCollection.find().toArray()
       res.send(result)
     })
-    //get all jobs posted by a specific user
-    app.get('/jobs/:email', async (req, res) => {
-      const email = req.params.email;
-      const query = { 'buyer.email': email }
-      const result = await jobsCollection.find(query).toArray()
-      res.send(result)
-    })
-    //delete a job from db
-    app.delete('/job/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
-      const result = await jobsCollection.deleteOne(query)
-      res.send(result)
-    })
-
     //get a single job data by id from db
     app.get('/job/:id', async (req, res) => {
       const id = req.params.id;
@@ -108,6 +87,38 @@ async function run() {
       const result = await jobsCollection.findOne(query)
       res.send(result)
     })
+    //save a job data in db
+    app.post('/add-job', async (req, res) => {
+      const jobData = req.body;
+      const result = await jobsCollection.insertOne(jobData)
+      res.send(result)
+    })
+    
+    
+    //get all jobs posted by a specific user
+    app.get('/jobs/:email',verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail=req.user?.email;
+
+      // console.log('email from token',decodedEmail);
+      // console.log('email from params',email);
+      
+      if(decodedEmail!==email){
+        return res.status(403).send({message:'forbidden access'})
+      }
+      const query = { 'buyer.email': email }
+      const result = await jobsCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    //delete a job from db
+    app.delete('/job/:id',verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await jobsCollection.deleteOne(query)
+      res.send(result)
+    })
+
 
     //update a job data in db
     app.put('/update-job/:id', async (req, res) => {
@@ -154,16 +165,19 @@ async function run() {
     //get all bids for a specific user
     app.get('/my-bids/:email', verifyToken, async (req, res) => {
 
-      const decodedEmail=req.user?.email;
       const isBuyer = req.query.buyer;
-      console.log(isBuyer);
+      // console.log(isBuyer);
+
       const email = req.params.email;
-      console.log('email from token',decodedEmail);
-      console.log('email from params',email);
+      const decodedEmail=req.user?.email;
+
+      // console.log('email from token',decodedEmail);
+      // console.log('email from params',email);
       
       if(decodedEmail!==email){
         return res.status(403).send({message:'forbidden access'})
       }
+
       let query = {}
       if (isBuyer) {
         query.buyer = email
@@ -190,29 +204,50 @@ async function run() {
       res.send(result)
     })
 
-    //get all jobs 
+
+
+       // Get all jobs data from db for pagination
 
     app.get('/all-jobs', async (req, res) => {
+      const size = parseInt(req.query.size)
+      const page = parseInt(req.query.page) - 1
+      const filter = req.query.filter
+      const sort = req.query.sort
+      const search = req.query.search
+      console.log(size, page)
 
-      const filter = req.query.filter;
-      const search = req.query.search;
-      const sort = req.query.sort;
-      let options = {}
-      if (sort) {
-        options = { sort: { deadline: sort === 'asc' ? 1 : -1 } }
-      }
       let query = {
-        title: {
-          $regex: search,
-          $options: 'i'
-        }
+        title: { $regex: search, $options: 'i' },
       }
-      if (filter) {
-        query.category = filter;
-      }
-      const result = await jobsCollection.find(query, options).toArray()
+
+      if (filter) query.category = filter
+      console.log(query);
+      
+      let options = {}
+      if (sort) options = { sort: { deadline: sort === 'asc' ? 1 : -1 } }
+      const result = await jobsCollection
+        .find(query, options)
+        .skip(page * size)
+        .limit(size)
+        .toArray()
+
       res.send(result)
     })
+
+    // Get all jobs data count from db
+    
+    app.get('/jobs-count', async (req, res) => {
+      const filter = req.query.filter
+      const search = req.query.search
+      let query = {
+       title: { $regex: search, $options: 'i' },
+      }
+      if (filter) query.category = filter
+      const count = await jobsCollection.countDocuments(query)
+
+      res.send({ count })
+    })
+  
 
     // Send a ping to confirm a successful connection
     // await client.db('admin').command({ ping: 1 })
