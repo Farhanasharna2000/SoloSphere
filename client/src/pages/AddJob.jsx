@@ -1,17 +1,35 @@
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { AuthContext } from '../providers/AuthProvider'
-import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
+import useAuth from '../Hook/UseAuth'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import UseAxiosSecure from '../Hook/UseAxiosSecure'
 const AddJob = () => {
-  const{user}=useContext(AuthContext)
-  const navigate=useNavigate()
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const axiosSecure = UseAxiosSecure()
   const [startDate, setStartDate] = useState(new Date())
-const handleSubmit = async e =>{
-  e.preventDefault();
-  const form = e.target
+  const { isPending, mutateAsync } = useMutation({
+    mutationFn: async (jobData) => {
+      await axiosSecure.post(`/add-job`, jobData)
+    },
+    onSuccess: () => {
+      console.log('data saved')
+      queryClient.invalidateQueries({ queryKey: ['jobs'] })
+
+    },
+    onError: err => {
+      console.log(err);
+
+    }
+  })
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    const form = e.target
     const title = form.job_title.value
     const email = form.email.value
     const deadline = startDate
@@ -22,33 +40,34 @@ const handleSubmit = async e =>{
 
     const formData = {
       title,
-      buyer:{
+      buyer: {
         email,
-        name:user?.displayName,
-        photo:user?.photoURL
+        name: user?.displayName,
+        photo: user?.photoURL
       },
       deadline,
       category,
       min_price,
       max_price,
       description,
-      bid_count:0,
+      bid_count: 0,
     }
     console.log(formData);
-    
-//make a post request
 
-try{
-await axios.post(`${import.meta.env.VITE_API_URL}/add-job`,formData)
-form.reset()
-toast.success('Data updated successfully!!!!!')
-navigate('/my-posted-jobs')
-}
-catch(err){
-toast.error(err.message) 
-}
+    //make a post request
 
-}
+    try {
+      // 1. make a post request using useMutation hook
+      await mutateAsync(formData)
+      form.reset()
+      toast.success('Data updated successfully!!!!!')
+      navigate('/my-posted-jobs')
+    }
+    catch (err) {
+      toast.error(err.message)
+    }
+
+  }
   return (
     <div className='flex justify-center items-center min-h-[calc(100vh-306px)] my-12'>
       <section className=' p-2 md:p-6 mx-auto bg-white rounded-md shadow-md '>
@@ -144,7 +163,7 @@ toast.error(err.message)
           </div>
           <div className='flex justify-end mt-6'>
             <button className='disabled:cursor-not-allowed px-8 py-2.5 leading-5 text-white transition-colors duration-300 transhtmlForm bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:bg-gray-600'>
-              Save
+              {isPending ? 'saving..' : 'Save'}
             </button>
           </div>
         </form>

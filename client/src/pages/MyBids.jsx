@@ -1,11 +1,11 @@
 import { useContext, useEffect, useState } from "react"
 import { AuthContext } from "../providers/AuthProvider"
-import axios from "axios"
 import BidTableRows from "../components/BidTableRows"
+import UseAxiosSecure from "../Hook/UseAxiosSecure"
 
 
 const MyBids = () => {
-
+  const axiosSecure=UseAxiosSecure()
   const { user } = useContext(AuthContext)
 
   const [bids, setBids] = useState([])
@@ -14,7 +14,7 @@ const MyBids = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
   const fetchAllbids = async () => {
-    const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/my-bids/${user?.email}`)
+    const { data } = await axiosSecure.get(`/my-bids/${user?.email}`)
     setBids(data)
   }
   console.log(bids);
@@ -25,7 +25,7 @@ const MyBids = () => {
       
     }
 try{
-const{data}=await axios.patch(`${import.meta.env.VITE_API_URL}/bid-status-update/${id}`,{status})
+const{data}=await axiosSecure.patch(`/bid-status-update/${id}`,{status})
 console.log(data);
 
 //refresh ui
